@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Plugin Library - Electron Community Hub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Shared stylesheet for the whole site -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <!--
+    PAGE WRAPPER
+    Uses the same .page class as index.html and issues.html
+    so that layout stays consistent across the whole site.
+  -->
+  <div class="page">
+
+    <!-- =================== HEADER =================== -->
+    <header>
+      <!-- Logo links back to homepage -->
+      <a
+        href="index.html"
+        class="brand-logo"
+        style="text-decoration: none; display: flex; align-items: center; justify-content: center;"
+      >
+        E
+      </a>
+
+      <!-- Navigation menu for switching between pages -->
+      <nav>
+        <a href="plugins.html">Plugin Library</a>
+        <a href="issues.html">Issue Dashboard</a>
+        <a href="faq.html">FAQ</a>
+      </nav>
+    </header>
+
+    <!-- =================== HERO SECTION =================== -->
+    <section class="hero" style="grid-template-columns: 1.6fr 1.2fr;">
+      <!-- LEFT SIDE: Page title and explanation -->
+      <div>
+        <h1>Plugin Library</h1>
+
+        <p>
+          This page lists community-made plugins for Electron, including
+          the plugin name, author, version, and rating. Users can filter
+          by tag, minimum rating, and search by plugin name or author.
+        </p>
+
+        <p>
+          All plugin data is stored in the SQL database using the
+          <code>plugins</code> and <code>tags</code> tables, and loaded
+          through the backend API.
+        </p>
+      </div>
+
+      <!-- RIGHT SIDE: Summary of Feature 2 -->
+      <div class="feature-card">
+        <h3>Feature 1 – Plugin Library</h3>
+        <p>
+          <strong>Database tables:</strong>
+          <code>plugins(id, name, author, version, rating)</code>,
+          <code>tags(id, name)</code>, and
+          <code>plugin_tags(plugin_id, tag_id)</code>.
+        </p>
+        <p style="margin-top: 0.5rem;">
+          <strong>How it works:</strong>
+        </p>
+        <ul class="feature-list">
+          <li>Loads plugins with <code>GET /api/plugins</code>.</li>
+          <li>Loads available tags with <code>GET /api/tags</code>.</li>
+          <li>Adds new plugins with <code>POST /api/plugins</code>.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- =================== FILTERS + NEW PLUGIN FORM =================== -->
+    <section class="features" style="margin-top: 1.5rem;">
+      <h2>Browse and Add Plugins</h2>
+
+      <!--
+        Layout container:
+        Left card: filters to narrow down the list
+        Right card: form to create a new plugin
+      -->
+      <div class="feature-grid">
+
+        <!-- LEFT CARD: FILTER CONTROLS -->
+        <div class="feature-card">
+          <h3>Filters</h3>
+          <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 0.75rem;">
+            Use these filters to narrow down the plugin list. Filters are
+            applied by calling <code>GET /api/plugins</code> with query
+            parameters for tag, minimum rating, and search.
+          </p>
+
+          <!-- Filter form (handled entirely with JavaScript and fetch) -->
+          <form id="plugin-filter-form">
+            <!-- Tag dropdown populated from /api/tags -->
+            <label for="tag-select" style="display: block; margin-bottom: 0.4rem;">
+              Tag:
+            </label>
+            <select id="tag-select" name="tag" style="width: 100%; margin-bottom: 0.8rem;">
+              <!-- Options are added by JavaScript -->
+              <option value="">All tags</option>
+            </select>
+
+            <!-- Minimum rating input -->
+            <label for="min-rating" style="display: block; margin-bottom: 0.4rem;">
+              Minimum Rating (0–5):
+            </label>
+            <input
+              type="number"
+              id="min-rating"
+              name="minRating"
+              min="0"
+              max="5"
+              step="0.5"
+              placeholder="e.g. 3.5"
+              style="width: 100%; margin-bottom: 0.8rem; padding: 0.4rem;"
+            />
+
+            <!-- Search field -->
+            <label for="search-text" style="display: block; margin-bottom: 0.4rem;">
+              Search (name or author):
+            </label>
+            <input
+              type="text"
+              id="search-text"
+              name="search"
+              placeholder="e.g. devtools, dark mode"
+              style="width: 100%; margin-bottom: 0.8rem; padding: 0.4rem;"
+            />
+
+            <!-- Apply / clear buttons -->
+            <div style="margin-top: 0.8rem;">
+              <button type="submit" class="btn btn-primary" style="margin-bottom: 0.4rem;">
+                Apply Filters
+              </button>
+              <button type="button" id="clear-plugin-filters" class="btn btn-outline">
+                Clear Filters
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- RIGHT CARD: NEW PLUGIN FORM -->
+        <div class="feature-card">
+          <h3>Add New Plugin</h3>
+          <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 0.75rem;">
+            Use this form to insert a new plugin into the
+            <code>plugins</code> table. Tags will be stored in the
+            <code>tags</code> and <code>plugin_tags</code> tables.
+          </p>
+
+          <!-- Form for creating a new plugin (handled with fetch/POST) -->
+          <form id="new-plugin-form">
+            <!-- Plugin name -->
+            <label for="plugin-name" style="display: block; margin-bottom: 0.4rem;">
+              Plugin Name:
+            </label>
+            <input
+              type="text"
+              id="plugin-name"
+              name="name"
+              required
+              placeholder="Example: DevTools Booster"
+              style="width: 100%; margin-bottom: 0.8rem; padding: 0.4rem;"
+            />
+
+            <!-- Plugin author -->
+            <label for="plugin-author" style="display: block; margin-bottom: 0.4rem;">
+              Author:
+            </label>
+            <input
+              type="text"
+              id="plugin-author"
+              name="author"
+              required
+              placeholder="Example: Jane Doe"
+              style="width: 100%; margin-bottom: 0.8rem; padding: 0.4rem;"
+            />
+
+            <!-- Plugin version -->
+            <label for="plugin-version" style="display: block; margin-bottom: 0.4rem;">
+              Version:
+            </label>
+            <input
+              type="text"
+              id="plugin-version"
+              name="version"
+              required
+              placeholder="Example: 1.0.0"
+              style="width: 100%; margin-bottom: 0.8rem; padding: 0.4rem;"
+            />
+
+            <!-- Rating (0–5) -->
+            <label for="plugin-rating" style="display: block; margin-bottom: 0.4rem;">
+              Rating (0–5):
+            </label>
+            <input
+              type="number"
+              id="plugin-rating"
+              name="rating"
+              required
+              min="0"
+              max="5"
+              step="0.1"
+              placeholder="Example: 4.5"
+              style="width: 100%; margin-bottom: 0.8rem; padding: 0.4rem;"
+            />
+
+            <!-- Tags (comma-separated) -->
+            <label for="plugin-tags" style="display: block; margin-bottom: 0.4rem;">
+              Tags (comma-separated):
+            </label>
+            <input
+              type="text"
+              id="plugin-tags"
+              name="tags"
+              placeholder="Example: debugging, performance"
+              style="width: 100%; margin-bottom: 0.8rem; padding: 0.4rem;"
+            />
+
+            <!-- Submit button -->
+            <button type="submit" class="btn btn-primary">
+              Add Plugin
+            </button>
+
+            <!-- Status message for success or error -->
+            <p id="plugin-message" style="margin-top: 0.6rem; font-size: 0.85rem; color: var(--muted);"></p>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================== PLUGINS TABLE =================== -->
+    <section class="features" style="margin-top: 2rem;">
+      <h2>Available Plugins</h2>
+      <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 0.75rem;">
+        The table below shows plugins returned by the backend route:
+        <code>GET /api/plugins</code>.
+        Filters are sent as query parameters (<code>tag</code>,
+        <code>minRating</code>, and <code>search</code>).
+      </p>
+
+      <!-- Table of plugins; rows inserted with JavaScript -->
+      <div style="overflow-x: auto;">
+        <table
+          style="
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: rgba(10, 15, 30, 0.92);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            overflow: hidden;
+          "
+        >
+          <thead>
+            <tr style="background: rgba(20, 30, 60, 0.95);">
+              <th style="padding: 0.6rem; text-align: left; border-bottom: 1px solid var(--card-border);">ID</th>
+              <th style="padding: 0.6rem; text-align: left; border-bottom: 1px solid var(--card-border);">Name</th>
+              <th style="padding: 0.6rem; text-align: left; border-bottom: 1px solid var(--card-border);">Author</th>
+              <th style="padding: 0.6rem; text-align: left; border-bottom: 1px solid var(--card-border);">Version</th>
+              <th style="padding: 0.6rem; text-align: left; border-bottom: 1px solid var(--card-border);">Rating</th>
+            </tr>
+          </thead>
+          <tbody id="plugins-tbody">
+            <!-- Plugin rows are dynamically added here -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Message shown when no plugins match the filters or on errors -->
+      <p id="plugins-empty-message" style="margin-top: 0.6rem; font-size: 0.9rem; color: var(--muted); display: none;">
+        No plugins found with the selected filters.
+      </p>
+    </section>
+  </div>
+
+  <!-- =================== FOOTER =================== -->
+  <footer>
+    Plugin Library · Final Project · Data from plugins &amp; tags tables via REST API
+  </footer>
+
+  <!-- =================== PAGE SCRIPT (FETCH API) =================== -->
+  <script>
+    /*
+      Base URL for backend API routes.
+      Make sure this matches your Express server port from server.js.
+      Example from server.js:
+         app.listen(PORT, ...) with PORT = 4000
+    */
+    const API_BASE = "http://localhost:4000/api";
+
+    // DOM references for filter controls
+    const filterForm = document.getElementById("plugin-filter-form");
+    const tagSelect = document.getElementById("tag-select");
+    const minRatingInput = document.getElementById("min-rating");
+    const searchInput = document.getElementById("search-text");
+    const clearFiltersButton = document.getElementById("clear-plugin-filters");
+
+    // DOM references for plugin table and empty message
+    const pluginsTbody = document.getElementById("plugins-tbody");
+    const pluginsEmptyMessage = document.getElementById("plugins-empty-message");
+
+    // DOM references for "new plugin" form
+    const newPluginForm = document.getElementById("new-plugin-form");
+    const pluginMessage = document.getElementById("plugin-message");
+
+    /**
+     * Load tags from the backend and populate the tag dropdown filter.
+     * Calls: GET /api/tags
+     */
+    async function loadTags() {
+      try {
+        const response = await fetch(`${API_BASE}/tags`);
+
+        if (!response.ok) {
+          console.error("Failed to load tags. HTTP status:", response.status);
+          return;
+        }
+
+        const tags = await response.json();
+
+        // Clear any existing options except the "All tags" default
+        // We'll keep the first option (value="") and remove others.
+        while (tagSelect.options.length > 1) {
+          tagSelect.remove(1);
+        }
+
+        // Add options for each tag
+        tags.forEach((tag) => {
+          const option = document.createElement("option");
+          option.value = tag.name;
+          option.textContent = tag.name;
+          tagSelect.appendChild(option);
+        });
+      } catch (error) {
+        console.error("Error loading tags:", error);
+      }
+    }
+
+    /**
+     * Load plugins from the backend with current filter values.
+     * Calls: GET /api/plugins with query parameters.
+     */
+    async function loadPlugins() {
+      try {
+        // Construct query string from filters (tag, minRating, search)
+        const params = new URLSearchParams();
+
+        if (tagSelect.value) {
+          params.append("tag", tagSelect.value);
+        }
+        if (minRatingInput.value) {
+          params.append("minRating", minRatingInput.value);
+        }
+        if (searchInput.value) {
+          params.append("search", searchInput.value);
+        }
+
+        const url = `${API_BASE}/plugins?${params.toString()}`;
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+          console.error("Failed to load plugins. HTTP status:", response.status);
+          pluginsTbody.innerHTML = "";
+          pluginsEmptyMessage.textContent = "Error loading plugins from the server.";
+          pluginsEmptyMessage.style.display = "block";
+          return;
+        }
+
+        const plugins = await response.json();
+
+        // Clear any existing rows in the table body
+        pluginsTbody.innerHTML = "";
+
+        if (!plugins || plugins.length === 0) {
+          pluginsEmptyMessage.textContent = "No plugins found with the selected filters.";
+          pluginsEmptyMessage.style.display = "block";
+          return;
+        }
+
+        // Hide "empty" message if there are plugins
+        pluginsEmptyMessage.style.display = "none";
+
+        // Create table rows for each plugin row from the database
+        plugins.forEach((plugin) => {
+          const tr = document.createElement("tr");
+
+          // ID cell
+          const idTd = document.createElement("td");
+          idTd.textContent = plugin.id;
+          idTd.style.padding = "0.5rem";
+          idTd.style.borderBottom = "1px solid var(--card-border)";
+          tr.appendChild(idTd);
+
+          // Name cell
+          const nameTd = document.createElement("td");
+          nameTd.textContent = plugin.name;
+          nameTd.style.padding = "0.5rem";
+          nameTd.style.borderBottom = "1px solid var(--card-border)";
+          tr.appendChild(nameTd);
+
+          // Author cell
+          const authorTd = document.createElement("td");
+          authorTd.textContent = plugin.author;
+          authorTd.style.padding = "0.5rem";
+          authorTd.style.borderBottom = "1px solid var(--card-border)";
+          tr.appendChild(authorTd);
+
+          // Version cell
+          const versionTd = document.createElement("td");
+          versionTd.textContent = plugin.version;
+          versionTd.style.padding = "0.5rem";
+          versionTd.style.borderBottom = "1px solid var(--card-border)";
+          tr.appendChild(versionTd);
+
+          // Rating cell (one decimal place)
+          const ratingTd = document.createElement("td");
+          const ratingValue =
+            typeof plugin.rating === "number"
+              ? plugin.rating.toFixed(1)
+              : plugin.rating;
+          ratingTd.textContent = ratingValue;
+          ratingTd.style.padding = "0.5rem";
+          ratingTd.style.borderBottom = "1px solid var(--card-border)";
+          tr.appendChild(ratingTd);
+
+          // Add row to table body
+          pluginsTbody.appendChild(tr);
+        });
+      } catch (error) {
+        console.error("Error loading plugins:", error);
+        pluginsTbody.innerHTML = "";
+        pluginsEmptyMessage.textContent = "Error loading plugins. Is the server running?";
+        pluginsEmptyMessage.style.display = "block";
+      }
+    }
+
+    /**
+     * Handle filter form submission.
+     * Prevents default form submission and reloads plugins with new filters.
+     */
+    filterForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      loadPlugins();
+    });
+
+    /**
+     * Handle "Clear Filters" button click.
+     * Resets all filter inputs and reloads all plugins.
+     */
+    clearFiltersButton.addEventListener("click", function () {
+      tagSelect.value = "";
+      minRatingInput.value = "";
+      searchInput.value = "";
+      loadPlugins();
+    });
+
+    /**
+     * Handle "New Plugin" form submission.
+     * Sends POST /api/plugins with JSON body.
+     */
+    newPluginForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      // Read values from input fields
+      const name = document.getElementById("plugin-name").value.trim();
+      const author = document.getElementById("plugin-author").value.trim();
+      const version = document.getElementById("plugin-version").value.trim();
+      const ratingStr = document.getElementById("plugin-rating").value.trim();
+      const tagsStr = document.getElementById("plugin-tags").value.trim();
+
+      // Validate required fields
+      if (!name || !author || !version || !ratingStr) {
+        pluginMessage.textContent = "Please fill in all required fields (name, author, version, rating).";
+        pluginMessage.style.color = "var(--danger)";
+        return;
+      }
+
+      // Convert rating to number
+      const rating = Number(ratingStr);
+      if (Number.isNaN(rating) || rating < 0 || rating > 5) {
+        pluginMessage.textContent = "Rating must be a number between 0 and 5.";
+        pluginMessage.style.color = "var(--danger)";
+        return;
+      }
+
+      // Convert comma-separated tags into an array of trimmed strings
+      let tags = [];
+      if (tagsStr) {
+        tags = tagsStr
+          .split(",")
+          .map((t) => t.trim())
+          .filter((t) => t.length > 0);
+      }
+
+      try {
+        // Send POST request to backend to create the plugin
+        const response = await fetch(`${API_BASE}/plugins`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, author, version, rating, tags }),
+        });
+
+        if (!response.ok) {
+          console.error("Failed to create plugin. HTTP status:", response.status);
+          pluginMessage.textContent = "Error creating plugin. Please try again.";
+          pluginMessage.style.color = "var(--danger)";
+          return;
+        }
+
+        // Clear the form and show success message
+        newPluginForm.reset();
+        pluginMessage.textContent = "Plugin created successfully.";
+        pluginMessage.style.color = "var(--success)";
+
+        // Reload tags (in case we added new ones) and reload plugin list
+        await loadTags();
+        await loadPlugins();
+      } catch (error) {
+        console.error("Error creating plugin:", error);
+        pluginMessage.textContent = "Error creating plugin. Is the server running?";
+        pluginMessage.style.color = "var(--danger)";
+      }
+    });
+
+    // On initial page load:
+    // 1. Load tags for the dropdown
+    // 2. Load plugin list
+    loadTags();
+    loadPlugins();
+  </script>
+</body>
+</html>

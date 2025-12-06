@@ -1,0 +1,183 @@
+/* ============================================================
+   GLOBAL COLOR VARIABLES
+   These make it easy for you to change theme colors in one place
+   ============================================================ */
+:root {
+  --bg: #050816;
+  --bg-alt: #0b1020;
+  --accent: #35c9ff;
+  --accent-soft: rgba(53, 201, 255, 0.12);
+  --text: #f5f7ff;
+  --muted: #a8b1c7;
+  --card-border: #202842;
+  --danger: #ff5c7a;
+  --success: #33e1a5;
+}
+
+/* ============================================================
+   GLOBAL RESET
+   Ensures consistent spacing and box behavior
+   ============================================================ */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, sans-serif;
+  background: radial-gradient(circle at top, #101630 0, #050816 50%, #02030a 100%);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================================
+   PAGE WRAPPER
+   Limits content width and centers layout
+   ============================================================ */
+.page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem;
+}
+
+/* ============================================================
+   HEADER
+   Contains site logo and navigation links
+   ============================================================ */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+/* Logo styling */
+.brand-logo {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: radial-gradient(circle at 30% 20%, #ffffff 0, #35c9ff 40%, #003366 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: #001122;
+  box-shadow: 0 0 10px rgba(53, 201, 255, 0.4);
+}
+
+/* ============================================================
+   NAVIGATION LINKS
+   ============================================================ */
+nav a {
+  margin-left: 1rem;
+  color: var(--muted);
+  text-decoration: none;
+  border: 1px solid transparent;
+  padding: 0.4rem 0.7rem;
+  border-radius: 8px;
+  transition: 0.2s;
+}
+
+nav a:hover {
+  color: var(--text);
+  background: var(--accent-soft);
+  border-color: var(--accent-soft);
+}
+
+/* ============================================================
+   HERO SECTION (Intro area)
+   ============================================================ */
+.hero {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.hero h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.hero p {
+  color: var(--muted);
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+/* ============================================================
+   BUTTON STYLES
+   ============================================================ */
+.btn {
+  display: inline-block;
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 500;
+  margin-right: 0.5rem;
+}
+
+.btn-primary {
+  background: linear-gradient(to right, #35c9ff, #0067ff);
+  color: #001122;
+  box-shadow: 0 0 12px rgba(53, 201, 255, 0.6);
+}
+
+.btn-outline {
+  border: 1px solid var(--card-border);
+  color: var(--muted);
+}
+
+.btn-outline:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+/* ============================================================
+   FEATURE CARDS (Reusable component)
+   ============================================================ */
+.feature-card {
+  padding: 1rem;
+  border-radius: 10px;
+  background: rgba(10, 15, 30, 0.92);
+  border: 1px solid var(--card-border);
+}
+
+.feature-list {
+  margin-left: 1.2rem;
+  margin-top: 0.5rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+/* ============================================================
+   FEATURES SECTION GRID
+   ============================================================ */
+.features {
+  margin-top: 3rem;
+}
+
+.features h2 {
+  margin-bottom: 1rem;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+footer {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--muted);
+  padding: 1.5rem;
+  border-top: 1px solid var(--card-border);
+  margin-top: 3rem;
+}

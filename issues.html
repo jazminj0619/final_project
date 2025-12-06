@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Issue Dashboard - Electron Community Hub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Link to shared styles for the whole site -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <!--
+    PAGE WRAPPER
+    Reuses the same .page class as index.html to keep layout consistent.
+  -->
+  <div class="page">
+
+    <!-- =================== HEADER =================== -->
+    <header>
+      <!-- Logo acts as a link back to the homepage -->
+      <a href="index.html" class="brand-logo" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">
+        E
+      </a>
+
+      <!-- Navigation between main pages -->
+      <nav>
+        <a href="plugins.html">Plugin Library</a>
+        <a href="issues.html">Issue Dashboard</a>
+        <a href="faq.html">FAQ</a>
+      </nav>
+    </header>
+
+    <!-- =================== PAGE TITLE + DESCRIPTION =================== -->
+    <section class="hero" style="grid-template-columns: 1.6fr 1.2fr;">
+      <!-- LEFT: Title and intro text -->
+      <div>
+        <h1>Issue Dashboard</h1>
+
+        <p>
+          This page shows reported bugs and crash issues related to Electron
+          projects. Data is loaded from the <code>issues</code> table in the
+          SQL database using the backend API.
+        </p>
+
+        <p>
+          Use the filters below to narrow down issues by severity and status.
+          You can also add a new issue using the form on the right.
+        </p>
+      </div>
+
+      <!-- RIGHT: Summary box explaining the feature -->
+      <div class="feature-card">
+        <h3>Feature 2 – Issue Dashboard</h3>
+        <p>
+          <strong>Database table:</strong> <code>issues(id, title, severity, status, created_at)</code>
+        </p>
+        <p style="margin-top: 0.5rem;">
+          <strong>How it works:</strong>
+        </p>
+        <ul class="feature-list">
+          <li>Loads issues with <code>GET /api/issues</code>.</li>
+          <li>Supports filters by severity and status.</li>
+          <li>Creates new issues with <code>POST /api/issues</code>.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- =================== FILTERS + NEW ISSUE FORM =================== -->
+    <section class="features" style="margin-top: 1.5rem;">
+      <h2>Manage Issues</h2>
+
+      <!--
+        Layout container:
+        Left: filter controls + refresh button
+        Right: new issue creation form
+      -->
+      <div class="feature-grid">
+        <!-- LEFT: FILTERS -->
+        <div class="feature-card">
+          <h3>Filters</h3>
+          <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 0.75rem;">
+            Choose a severity and status, then click "Apply Filters" to reload issues
+            from the server. Use "Clear Filters" to show everything.
+          </p>
+
+          <!--
+            Filter form.
+            We don't actually submit the form in the traditional way.
+            Instead, we use JavaScript to intercept the click and call fetch().
+          -->
+          <form id="filter-form">
+            <!-- Severity filter -->
+            <label for="severity-select" style="display: block; margin-bottom: 0.4rem;">
+              Severity:
+            </label>
+            <select id="severity-select" name="severity" style="width: 100%; margin-bottom: 0.8rem;">
+              <option value="">All severities</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="critical">Critical</option>
+            </select>
+
+            <!-- Status filter -->
+            <label for="status-select" style="display: block; margin-bottom: 0.4rem;">
+              Status:
+            </label>
+            <select id="status-select" name="status" style="width: 100%; margin-bottom: 0.8rem;">
+              <option value="">All statuses</option>
+              <option value="open">Open</option>
+              <option value="in_progress">In Progress</option>
+              <option value="closed">Closed</option>
+            </select>
+
+            <!-- Buttons to apply or clear filters -->
+            <div style="margin-top: 0.8rem;">
+              <button type="submit" class="btn btn-primary" style="margin-bottom: 0.4rem;">
+                Apply Filters
+              </button>
+              <button type="button" id="clear-filters" class="btn btn-outline">
+                Clear Filters
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- RIGHT: NEW ISSUE FORM -->
+        <div class="feature-card">
+          <h3>Create New Issue</h3>
+          <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 0.75rem;">
+            Use this form to add a new issue into the <code>issues</code> table.
+            The issue will appear in the list below after it is created.
+          </p>
+
+          <!--
+            Form for creating a new issue.
+            We will handle submission with JavaScript and call POST /api/issues.
+          -->
+          <form id="new-issue-form">
+            <!-- Title input -->
+            <label for="issue-title" style="display: block; margin-bottom: 0.4rem;">
+              Issue Title:
+            </label>
+            <input
+              type="text"
+              id="issue-title"
+              name="title"
+              placeholder="Example: Crash when opening settings"
+              required
+              style="width: 100%; margin-bottom: 0.8rem; padding: 0.4rem;"
+            />
+
+            <!-- Severity dropdown -->
+            <label for="issue-severity" style="display: block; margin-bottom: 0.4rem;">
+              Severity:
+            </label>
+            <select
+              id="issue-severity"
+              name="severity"
+              required
+              style="width: 100%; margin-bottom: 0.8rem;"
+            >
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="critical">Critical</option>
+            </select>
+
+            <!-- Status dropdown -->
+            <label for="issue-status" style="display: block; margin-bottom: 0.4rem;">
+              Status:
+            </label>
+            <select
+              id="issue-status"
+              name="status"
+              required
+              style="width: 100%; margin-bottom: 0.8rem;"
+            >
+              <option value="open">Open</option>
+              <option value="in_progress">In Progress</option>
+              <option value="closed">Closed</option>
+            </select>
+
+            <!-- Submit button -->
+            <button type="submit" class="btn btn-primary">
+              Add Issue
+            </button>
+
+            <!-- Small status text area for success/error messages -->
+            <p id="issue-message" style="margin-top: 0.6rem; font-size: 0.85rem; color: var(--muted);"></p>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================== ISSUES TABLE =================== -->
+    <section class="features" style="margin-top: 2rem;">
+      <h2>Current Issues</h2>
+      <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 0.75rem;">
+        The table below is populated using data returned by the backend route:
+        <code>GET /api/issues</code>. Filters are passed as query parameters
+        (<code>severity</code> and <code>status</code>).
+      </p>
+
+      <!--
+        Table to display issues.
+        We fill the tbody contents dynamically via JavaScript.
+      -->
+      <div style="overflow-x: auto;">
+        <table
+          style="
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: rgba(10, 15, 30, 0.92);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            overflow: hidden;
+          "
+        >
+          <thead>
+            <tr style="background: rgba(20, 30, 60, 0.95);">
+              <th style="padding: 0.6rem; text-align: left; border-bottom: 1px solid var(--card-border);">ID</th>
+              <th style="padding: 0.6rem; text-align: left; border-bottom: 1px solid var(--card-border);">Title</th>
+              <th style="padding: 0.6rem; text-align: left; border-bottom: 1px solid var(--card-border);">Severity</th>
+              <th style="padding: 0.6rem; text-align: left; border-bottom: 1px solid var(--card-border);">Status</th>
+              <th style="padding: 0.6rem; text-align: left; border-bottom: 1px solid var(--card-border);">Created At</th>
+            </tr>
+          </thead>
+          <tbody id="issues-tbody">
+            <!-- JavaScript will inject <tr> rows here -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Simple message shown when there are no issues or on error -->
+      <p id="issues-empty-message" style="margin-top: 0.6rem; font-size: 0.9rem; color: var(--muted); display: none;">
+        No issues found with the selected filters.
+      </p>
+    </section>
+  </div>
+
+  <!-- =================== FOOTER =================== -->
+  <footer>
+    Issue Dashboard · Final Project · Data from issues table via REST API
+  </footer>
+
+  <!-- =================== PAGE SCRIPT (USES FETCH API) =================== -->
+  <script>
+    /*
+      Base URL for the backend API.
+
+      If you run your Express server on a different port (or the same origin),
+      update this value accordingly.
+
+      Example backend URL:
+      - http://localhost:4000/api/issues
+    */
+    const API_BASE = "http://localhost:4000/api";
+
+    // Grab references to DOM elements we need to interact with
+    const issuesTbody = document.getElementById("issues-tbody");
+    const issuesEmptyMessage = document.getElementById("issues-empty-message");
+    const filterForm = document.getElementById("filter-form");
+    const severitySelect = document.getElementById("severity-select");
+    const statusSelect = document.getElementById("status-select");
+    const clearFiltersButton = document.getElementById("clear-filters");
+    const newIssueForm = document.getElementById("new-issue-form");
+    const issueMessage = document.getElementById("issue-message");
+
+    /**
+     * Helper function to format a timestamp string into a readable local time.
+     * If the backend returns ISO strings (e.g., "2025-12-06T12:34:56.000Z"),
+     * this will turn them into "MM/DD/YYYY, HH:MM:SS" in the user's locale.
+     */
+    function formatDate(timestamp) {
+      if (!timestamp) return "";
+      const date = new Date(timestamp);
+      if (Number.isNaN(date.getTime())) return timestamp; // fallback to raw string if parsing fails
+      return date.toLocaleString();
+    }
+
+    /**
+     * Fetch issues from the backend using the current filter values.
+     * This function:
+     *  1. Builds a query string (?severity=...&status=...)
+     *  2. Calls GET /api/issues with those query parameters
+     *  3. Renders the results inside the <tbody> as table rows
+     */
+    async function loadIssues() {
+      try {
+        // Build query parameters based on selected filters
+        const params = new URLSearchParams();
+        if (severitySelect.value) {
+          params.append("severity", severitySelect.value);
+        }
+        if (statusSelect.value) {
+          params.append("status", statusSelect.value);
+        }
+
+        // Construct full URL: e.g. http://localhost:4000/api/issues?severity=high&status=open
+        const url = `${API_BASE}/issues?${params.toString()}`;
+
+        // Call the backend
+        const response = await fetch(url);
+
+        // If the response is not OK, show an error message
+        if (!response.ok) {
+          console.error("Failed to load issues. HTTP status:", response.status);
+          issuesTbody.innerHTML = "";
+          issuesEmptyMessage.textContent = "Error loading issues from the server.";
+          issuesEmptyMessage.style.display = "block";
+          return;
+        }
+
+        // Parse JSON body
+        const issues = await response.json();
+
+        // Clear existing rows
+        issuesTbody.innerHTML = "";
+
+        // If there are no issues, show an informational message
+        if (!issues || issues.length === 0) {
+          issuesEmptyMessage.textContent = "No issues found with the selected filters.";
+          issuesEmptyMessage.style.display = "block";
+          return;
+        }
+
+        // Hide the "empty" message if we have issues
+        issuesEmptyMessage.style.display = "none";
+
+        // Create table rows for each issue
+        issues.forEach((issue) => {
+          const tr = document.createElement("tr");
+
+          // ID cell
+          const idTd = document.createElement("td");
+          idTd.textContent = issue.id;
+          idTd.style.padding = "0.5rem";
+          idTd.style.borderBottom = "1px solid var(--card-border)";
+          tr.appendChild(idTd);
+
+          // Title cell
+          const titleTd = document.createElement("td");
+          titleTd.textContent = issue.title;
+          titleTd.style.padding = "0.5rem";
+          titleTd.style.borderBottom = "1px solid var(--card-border)";
+          tr.appendChild(titleTd);
+
+          // Severity cell
+          const severityTd = document.createElement("td");
+          severityTd.textContent = issue.severity;
+          severityTd.style.padding = "0.5rem";
+          severityTd.style.borderBottom = "1px solid var(--card-border)";
+          tr.appendChild(severityTd);
+
+          // Status cell
+          const statusTd = document.createElement("td");
+          statusTd.textContent = issue.status;
+          statusTd.style.padding = "0.5rem";
+          statusTd.style.borderBottom = "1px solid var(--card-border)";
+          tr.appendChild(statusTd);
+
+          // Created At cell
+          const createdTd = document.createElement("td");
+          createdTd.textContent = formatDate(issue.created_at);
+          createdTd.style.padding = "0.5rem";
+          createdTd.style.borderBottom = "1px solid var(--card-border)";
+          tr.appendChild(createdTd);
+
+          // Append the row to the tbody
+          issuesTbody.appendChild(tr);
+        });
+      } catch (error) {
+        // If something goes wrong (e.g., server offline), show a message and log the error
+        console.error("Error loading issues:", error);
+        issuesTbody.innerHTML = "";
+        issuesEmptyMessage.textContent = "Error loading issues. Is the server running?";
+        issuesEmptyMessage.style.display = "block";
+      }
+    }
+
+    /**
+     * Event handler for the filter form submission.
+     * Prevents the default form submit behavior (page reload) and
+     * calls loadIssues() instead.
+     */
+    filterForm.addEventListener("submit", function (event) {
+      event.preventDefault(); // stop the page from reloading
+      loadIssues();           // reload data with current filters
+    });
+
+    /**
+     * Event handler for the "Clear Filters" button.
+     * Resets the dropdowns and reloads all issues.
+     */
+    clearFiltersButton.addEventListener("click", function () {
+      // Reset both selects to their default "All" values
+      severitySelect.value = "";
+      statusSelect.value = "";
+
+      // Reload issues with no filters applied
+      loadIssues();
+    });
+
+    /**
+     * Event handler for the "New Issue" form submission.
+     * Sends a POST request to /api/issues with the form data.
+     */
+    newIssueForm.addEventListener("submit", async function (event) {
+      event.preventDefault(); // prevent page reload
+
+      // Grab values from the form inputs
+      const title = document.getElementById("issue-title").value.trim();
+      const severity = document.getElementById("issue-severity").value;
+      const status = document.getElementById("issue-status").value;
+
+      // Basic client-side validation: require a title
+      if (!title) {
+        issueMessage.textContent = "Please enter a title for the issue.";
+        issueMessage.style.color = "var(--danger)";
+        return;
+      }
+
+      try {
+        // Send POST request to create a new issue
+        const response = await fetch(`${API_BASE}/issues`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ title, severity, status }),
+        });
+
+        // If the backend returns an error code, display the error
+        if (!response.ok) {
+          console.error("Failed to create issue. HTTP status:", response.status);
+          issueMessage.textContent = "Error creating issue. Please try again.";
+          issueMessage.style.color = "var(--danger)";
+          return;
+        }
+
+        // If successful, clear the form and show success message
+        newIssueForm.reset();
+        issueMessage.textContent = "Issue created successfully.";
+        issueMessage.style.color = "var(--success)";
+
+        // Reload the issues list to include the new issue
+        loadIssues();
+      } catch (error) {
+        // If there is a network error or other problem
+        console.error("Error creating issue:", error);
+        issueMessage.textContent = "Error creating issue. Is the server running?";
+        issueMessage.style.color = "var(--danger)";
+      }
+    });
+
+    // When the page first loads, we immediately fetch and display issues
+    loadIssues();
+  </script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FAQ - Electron Community Hub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Shared styles -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <!-- PAGE WRAPPER -->
+  <div class="page">
+
+    <!-- =================== HEADER =================== -->
+    <header>
+      <!-- Logo links back to homepage -->
+      <a
+        href="index.html"
+        class="brand-logo"
+        style="text-decoration: none; display: flex; align-items: center; justify-content: center;"
+      >
+        E
+      </a>
+
+      <!-- Navigation including FAQ -->
+      <nav>
+        <a href="plugins.html">Plugin Library</a>
+        <a href="issues.html">Issue Dashboard</a>
+        <a href="faq.html">FAQ</a>
+      </nav>
+    </header>
+
+    <!-- =================== HERO / INTRO =================== -->
+    <section class="hero" style="grid-template-columns: 1.6fr 1.2fr;">
+      <!-- LEFT: Title and description -->
+      <div>
+        <h1>Frequently Asked Questions</h1>
+
+        <p>
+          This FAQ page now pulls questions and answers from the database,
+          making it easier to manage and update common help content.
+        </p>
+
+        <p>
+          All entries are stored in the <code>faqs</code> table and loaded via
+          the <code>GET /api/faqs</code> endpoint exposed by the backend server.
+        </p>
+      </div>
+
+      <!-- RIGHT: Feature summary card -->
+      <div class="feature-card">
+        <h3>FAQ Feature</h3>
+        <p style="font-size: 0.9rem; color: var(--muted);">
+          <strong>Database table:</strong>
+          <code>faqs(id, question, answer)</code>
+        </p>
+        <p style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--muted);">
+          <strong>API routes:</strong>
+        </p>
+        <ul class="feature-list">
+          <li><code>GET /api/faqs</code> – load all FAQs</li>
+          <li><code>POST /api/faqs</code> – add a new FAQ (admin/seed)</li>
+        </ul>
+        <p style="margin-top: 0.6rem; font-size: 0.85rem; color: var(--muted);">
+          The FAQs below are rendered dynamically using JavaScript by calling
+          <code>/api/faqs</code>.
+        </p>
+      </div>
+    </section>
+
+    <!-- =================== FAQ LIST =================== -->
+    <section class="features" style="margin-top: 1.5rem;">
+      <h2>Common Questions</h2>
+
+      <!-- Container card for the list -->
+      <div class="feature-card" style="margin-top: 1rem;">
+        <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 0.75rem;">
+          Click on a question to expand or collapse the answer. The content below
+          is not hard-coded in HTML. Instead, it is loaded from the
+          <code>faqs</code> database table.
+        </p>
+
+        <!-- This is where the FAQ <details> will be inserted -->
+        <div id="faq-container">
+          <!-- JavaScript will inject FAQ items here -->
+        </div>
+
+        <!-- Message shown if there are no FAQs or if an error occurs -->
+        <p
+          id="faq-message"
+          style="margin-top: 0.8rem; font-size: 0.9rem; color: var(--muted); display: none;"
+        ></p>
+      </div>
+    </section>
+  </div>
+
+  <!-- =================== FOOTER =================== -->
+  <footer>
+    FAQ · Final Project · Backed by faqs table via REST API
+  </footer>
+
+  <!-- =================== SCRIPT: LOAD FAQS FROM API =================== -->
+  <script>
+    /*
+      Base URL for the backend API.
+      Make sure this matches the port used in backend/server.js.
+      Example: http://localhost:4000/api
+    */
+    const API_BASE = "http://localhost:4000/api";
+
+    // DOM elements we’ll update
+    const faqContainer = document.getElementById("faq-container");
+    const faqMessage = document.getElementById("faq-message");
+
+    /**
+     * loadFaqs()
+     * -----------
+     * Fetches FAQ data from GET /api/faqs and renders it as a list of
+     * <details> elements (accordion style).
+     */
+    async function loadFaqs() {
+      try {
+        // Call the backend to get all FAQs
+        const response = await fetch(`${API_BASE}/faqs`);
+
+        if (!response.ok) {
+          console.error("Failed to load FAQs. HTTP status:", response.status);
+          faqContainer.innerHTML = "";
+          faqMessage.textContent = "Error loading FAQs from the server.";
+          faqMessage.style.display = "block";
+          return;
+        }
+
+        // Parse JSON body
+        const faqs = await response.json();
+
+        // Clear any previous content
+        faqContainer.innerHTML = "";
+
+        if (!faqs || faqs.length === 0) {
+          faqMessage.textContent = "No FAQs found. Add some using POST /api/faqs.";
+          faqMessage.style.display = "block";
+          return;
+        }
+
+        // Hide message if we have FAQs
+        faqMessage.style.display = "none";
+
+        // For each FAQ row, create a <details> element
+        faqs.forEach((faq) => {
+          // details element for expand/collapse
+          const detailsEl = document.createElement("details");
+          detailsEl.style.marginBottom = "0.8rem";
+
+          // summary element (the question)
+          const summaryEl = document.createElement("summary");
+          summaryEl.textContent = faq.question;
+          summaryEl.style.cursor = "pointer";
+          summaryEl.style.fontWeight = "500";
+
+          // paragraph for the answer
+          const answerP = document.createElement("p");
+          answerP.textContent = faq.answer;
+          answerP.style.marginTop = "0.4rem";
+          answerP.style.color = "var(--muted)";
+          answerP.style.fontSize = "0.9rem";
+
+          // Assemble: <details><summary>Q</summary><p>A</p></details>
+          detailsEl.appendChild(summaryEl);
+          detailsEl.appendChild(answerP);
+
+          // Add to container
+          faqContainer.appendChild(detailsEl);
+        });
+      } catch (error) {
+        console.error("Error loading FAQs:", error);
+        faqContainer.innerHTML = "";
+        faqMessage.textContent = "Error loading FAQs. Is the server running?";
+        faqMessage.style.display = "block";
+      }
+    }
+
+    // Load FAQs when the page first loads
+    loadFaqs();
+  </script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-UTF-8" />
+  <title>Electron Community Hub - Final Project</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Shared stylesheet -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <!-- =================== PAGE WRAPPER =================== -->
+  <div class="page">
+
+    <!-- =================== HEADER =================== -->
+    <header>
+      <!-- Logo (links back to homepage if clicked) -->
+      <a
+        href="index.html"
+        class="brand-logo"
+        style="text-decoration: none; display: flex; align-items: center; justify-content: center;"
+      >E</a>
+
+      <!-- Navigation bar with links to all features -->
+      <nav>
+        <a href="plugins.html">Plugin Library</a>
+        <a href="issues.html">Issue Dashboard</a>
+        <a href="faq.html">FAQ</a>
+      </nav>
+    </header>
+
+    <!-- =================== HERO SECTION =================== -->
+    <section class="hero">
+      <!-- LEFT SIDE CONTENT -->
+      <div>
+        <h1>Electron Community Hub</h1>
+
+        <p>
+          Welcome to our full-stack final project! This website allows users to browse
+          community-created Electron plugins, monitor reported issues, and learn more
+          about the project through a dedicated FAQ page.
+        </p>
+
+        <p>
+          The application includes a custom backend server, SQLite database,
+          and four fully implemented features displayed below.
+        </p>
+
+        <!-- Primary call-to-action buttons -->
+        <a href="plugins.html" class="btn btn-primary">Browse Plugin Library →</a>
+        <a href="issues.html" class="btn btn-outline">View Issue Dashboard</a>
+      </div>
+
+      <!-- RIGHT SIDE FEATURE SUMMARY CARD -->
+      <div class="feature-card">
+        <h3>Project Overview</h3>
+        <p>This project includes:</p>
+
+        <ul class="feature-list">
+          <li>✓ Node.js + Express backend server</li>
+          <li>✓ SQLite database with multiple tables</li>
+          <li>✓ REST API endpoints for all features</li>
+          <li>✓ Three interactive feature pages + FAQ</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- =================== FEATURE DESCRIPTIONS =================== -->
+    <section class="features">
+      <h2>Project Features</h2>
+
+      <!--
+        FEATURE GRID
+        This section highlights all implemented features.
+        Each feature is a card representing a major part of the final project.
+      -->
+      <div class="feature-grid">
+
+        <!-- Feature 1: Plugin Library -->
+        <div class="feature-card">
+          <h3>Feature 1 – Plugin Library</h3>
+          <p>
+            Displays a list of community-created Electron plugins including their
+            name, author, version, and rating. Users can filter plugins and add
+            new ones to the database.
+          </p>
+          <a href="plugins.html" class="btn btn-outline" style="margin-top: 0.4rem;">
+            Go to Plugin Library →
+          </a>
+        </div>
+
+        <!-- Feature 2: Issue Dashboard -->
+        <div class="feature-card">
+          <h3>Feature 2 – Issue Dashboard</h3>
+          <p>
+            Shows reported bugs and crash issues with filters for severity
+            and status. Users can add new issues and view them in a table.
+          </p>
+          <a href="issues.html" class="btn btn-outline" style="margin-top: 0.4rem;">
+            Go to Issue Dashboard →
+          </a>
+        </div>
+
+        <!-- Feature 3: FAQ Page -->
+        <div class="feature-card">
+          <h3>Feature 3 – FAQ Page</h3>
+          <p>
+            Provides users with answers to common questions about the project,
+            including how the backend, database, and features work. Includes
+            interactive expand/collapse elements.
+          </p>
+          <a href="faq.html" class="btn btn-outline" style="margin-top: 0.4rem;">
+            View FAQ →
+          </a>
+        </div>
+
+      </div>
+    </section>
+  </div>
+
+  <!-- =================== FOOTER =================== -->
+  <footer>
+    Final Project · Electron Community Hub · Built with HTML, CSS, JavaScript, Node, and SQLite
+  </footer>
+
+</body>
+</html>
