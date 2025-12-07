@@ -42,6 +42,13 @@ app.use(cors());
 // -----------------------------------------------------
 // 3. SERVE STATIC FRONTEND FILES
 // -----------------------------------------------------
+//
+// Expected folder structure:
+//
+// final_project/
+//   public/          → index.html, plugins.html, issues.html, faq.html, styles.css...
+//   backend/         → server.js, database.db
+//
 const PUBLIC_DIR = path.join(__dirname, "..", "public");
 
 // Serve everything in /public, so /index.html, /plugins.html, etc.
@@ -169,11 +176,12 @@ initializeDatabase();
 
 /**
  * Ensure a tag exists in the tags table.
- * If it exists → return existing id.
- * If it doesn't → insert and return new id.
+ * If it exists → callback(existing id).
+ * If it doesn't → insert and callback(new id).
+ * If something fails → callback(null).
  */
 function ensureTagExists(tagName, callback) {
-  const trimmed = tagName.trim();
+  const trimmed = String(tagName || "").trim();
   if (!trimmed) return callback(null);
 
   const findSql = `SELECT id FROM tags WHERE name = ?;`;
@@ -222,15 +230,59 @@ function linkPluginTag(pluginId, tagId) {
 
 /**
  * GET /api/plugins
- * Returns all plugins.
- * (Your front end already knows how to display them.)
+ * Returns plugins, optionally filtered by:
+ *   ?tag=tagName
+ *   ?minRating=3.5
+ *   ?search=someText
+ *
+ * This matches the filters used in plugins.html.
  */
 app.get("/api/plugins", (req, res) => {
-  const query = "SELECT * FROM plugins ORDER BY rating DESC, name ASC;";
+  const { tag, minRating, search } = req.query;
 
-  db.all(query, [], (err, rows) => {
+  // Base query selects from plugins
+  let sql = `
+    SELECT DISTINCT p.id, p.name, p.author, p.version, p.rating
+    FROM plugins p
+  `;
+  const params = [];
+
+  // If a tag filter is used, join plugin_tags and tags
+  if (tag) {
+    sql += `
+      JOIN plugin_tags pt ON pt.plugin_id = p.id
+      JOIN tags t ON t.id = pt.tag_id
+    `;
+  }
+
+  // Always start WHERE with a no-op
+  sql += " WHERE 1 = 1 ";
+
+  // If tag was provided, filter by tag name
+  if (tag) {
+    sql += " AND t.name = ? ";
+    params.push(tag);
+  }
+
+  // If minRating was provided, filter by rating >= minRating
+  if (minRating) {
+    sql += " AND p.rating >= ? ";
+    params.push(Number(minRating));
+  }
+
+  // If search text was provided, filter by name or author (LIKE %search%)
+  if (search) {
+    sql += " AND (p.name LIKE ? OR p.author LIKE ?) ";
+    const pattern = `%${search}%`;
+    params.push(pattern, pattern);
+  }
+
+  // Order results
+  sql += " ORDER BY p.rating DESC, p.name ASC;";
+
+  db.all(sql, params, (err, rows) => {
     if (err) {
-      console.error("Database error (plugins): ", err);
+      console.error("Database error (plugins with filters): ", err);
       return res.status(500).json({ error: "Failed to fetch plugins" });
     }
     res.json(rows);
@@ -275,7 +327,7 @@ app.post("/api/plugins", (req, res) => {
   const insertPluginSql = `
     INSERT INTO plugins (name, author, version, rating)
     VALUES (?, ?, ?, ?);
-  `;
+ `;
 
   db.run(
     insertPluginSql,
@@ -485,6 +537,6 @@ app.post("/api/faqs", (req, res) => {
 // 10. START THE SERVER
 // -----------------------------------------------------
 app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
-  console.log("📁 Serving files from:", PUBLIC_DIR);
+  console.log(` Server running at http://localhost:${PORT}`);
+  console.log(" Serving files from:", PUBLIC_DIR);
 });
