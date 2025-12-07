@@ -9,113 +9,45 @@
  *   ✔ API routes for plugins
  *   ✔ API routes for issues
  *   ✔ API routes for FAQs
- *
- * IMPORTANT:
- * The backend uses SQLite. The database file MUST exist
- * in the backend folder and must be named:
- *
- *          database.db
- *
- * If the file does not exist, SQLite will automatically
- * create it. But your CREATE TABLE statements MUST run
- * correctly, or the public pages will NOT work.
  */
 
-// -----------------------------------------------------
-// 1. IMPORT DEPENDENCIES
-// -----------------------------------------------------
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const sqlite3 = require("sqlite3").verbose();
 
-// -----------------------------------------------------
-// 2. INITIALIZE EXPRESS APP
-// -----------------------------------------------------
+// Initialize the app
 const app = express();
 const PORT = 4000;
 
-// Middleware so server accepts JSON and cross-origin requests
 app.use(express.json());
 app.use(cors());
 
-// -----------------------------------------------------
-// 3. SERVE STATIC FRONTEND FILES
-// -----------------------------------------------------
+// Serve static public files
 const PUBLIC_DIR = path.join(__dirname, "..", "public");
 app.use(express.static(PUBLIC_DIR));
 
-// Optional: When visiting "/", load index.html
+// Root route
 app.get("/", (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, "index.html"));
 });
 
 // -----------------------------------------------------
-// 4. CONNECT TO SQLITE DATABASE
+// CONNECT TO SQLITE
 // -----------------------------------------------------
-/**
- * DATABASE NOTE:
- * ---------------
- * SQLite stores all data in a single file.
- * If database.db does NOT exist yet, SQLite will create it.
- *
- * Create tables using SQL so they appear in the file.
- *
- * Example:
- *   db.run("CREATE TABLE IF NOT EXISTS plugins (...)");
- */
-
 const DB_PATH = path.join(__dirname, "database.db");
 const db = new sqlite3.Database(DB_PATH, (err) => {
-  if (err) {
-    console.error(" Failed to connect to database:", err.message);
-  } else {
-    console.log(" Connected to SQLite database:", DB_PATH);
-  }
+  if (err) console.error("Failed to connect:", err.message);
+  else console.log("Connected to database:", DB_PATH);
 });
 
 // -----------------------------------------------------
-// 5. INITIALIZE DATABASE TABLES
+// CREATE TABLES
 // -----------------------------------------------------
-/**
- * TODO: create ALL project tables here.
- *       Use db.run("CREATE TABLE IF NOT EXISTS ...")
- *
- * Required tables:
- *
- *  plugins
- *    id INTEGER PRIMARY KEY
- *    name TEXT
- *    author TEXT
- *    version TEXT
- *    rating REAL
- *
- * tags
- *    id INTEGER PRIMARY KEY
- *    name TEXT
- *
- * plugin_tags  (many-to-many join table)
- *    plugin_id INTEGER
- *    tag_id INTEGER
- *
- *  issues
- *    id INTEGER PRIMARY KEY
- *    title TEXT
- *    severity TEXT
- *    status TEXT
- *    created_at TEXT
- *
- *  faqs
- *    id INTEGER PRIMARY KEY
- *    question TEXT
- *    answer TEXT
- */
-
 function initializeDatabase() {
   db.serialize(() => {
-    console.log("🛠 Creating tables (if they do not exist)...");
+    console.log("Creating tables…");
 
-    // EXAMPLE of how to create a table:
     db.run(
       `
       CREATE TABLE IF NOT EXISTS plugins (
@@ -125,59 +57,198 @@ function initializeDatabase() {
         version TEXT NOT NULL,
         rating REAL NOT NULL
       );
-      `,
-      (err) => {
-        if (err) console.log(" Error creating plugins table:", err.message);
-        else console.log(" plugins table ready");
-      }
+      `
     );
 
-    // TODO: Create remaining tables (tags, plugin_tags, issues, faqs)
+    db.run(
+      `
+      CREATE TABLE IF NOT EXISTS tags (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE
+      );
+      `
+    );
+
+    db.run(
+      `
+      CREATE TABLE IF NOT EXISTS plugin_tags (
+        plugin_id INTEGER,
+        tag_id INTEGER
+      );
+      `
+    );
+
+    db.run(
+      `
+      CREATE TABLE IF NOT EXISTS issues (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+      `
+    );
+
+    db.run(
+      `
+      CREATE TABLE IF NOT EXISTS faqs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        question TEXT NOT NULL,
+        answer TEXT NOT NULL
+      );
+      `
+    );
   });
 }
 
-// Run table creation on server start
 initializeDatabase();
 
 // -----------------------------------------------------
-// 6. API ROUTES (You will fill these in)
+// API ROUTES
 // -----------------------------------------------------
-/**
- * Implement:
- *
- * ------------- PLUGIN ROUTES -------------
- * GET  /api/plugins
- * POST /api/plugins
- *
- * ------------- TAG ROUTES ---------------
- * GET /api/tags    (for dropdown filter)
- *
- * ------------- ISSUE ROUTES --------------
- * GET  /api/issues
- * POST /api/issues
- *
- * ------------- FAQ ROUTES ----------------
- * GET  /api/faqs
- * POST /api/faqs
- *
- * Each route should use SQL queries with db.all() or db.run()
- */
 
-
-// EXAMPLE EMPTY ROUTE (Replace with real SQL logic)
+// ---------------- PLUGINS ----------------
 app.get("/api/plugins", (req, res) => {
-  res.json({ message: "TODO: Return plugin list from database" });
+  const query = "SELECT * FROM plugins";
+
+  db.all(query, [], (err, rows) => {
+    if (err) return res.status(500).json({ error: "Failed to fetch plugins" });
+    res.json(rows);
+  });
 });
 
 app.post("/api/plugins", (req, res) => {
-  res.json({ message: "TODO: Insert plugin into database" });
+  const { name, author, version, rating, tname } = req.body;
+
+  if (!name || !author || !version || !rating || !tname) {
+    return res.status(400).json({ error: "All plugin fields are required." });
+  }
+
+  // INSERT plugin first
+  const pluginSQL = `
+    INSERT INTO plugins (name, author, version, rating)
+    VALUES (?, ?, ?, ?)
+  `;
+
+  db.run(pluginSQL, [name, author, version, rating], function (err) {
+    if (err) return res.status(500).json({ error: "Failed to add plugin" });
+
+    const pluginId = this.lastID;
+
+    // INSERT or use existing tag
+    const tagSQL = `INSERT OR IGNORE INTO tags (name) VALUES (?)`;
+
+    db.run(tagSQL, [tname], function (err) {
+      if (err) return res.status(500).json({ error: "Failed to add tag" });
+
+      // Retrieve tag ID (whether newly inserted or old)
+      db.get(
+        `SELECT id FROM tags WHERE name = ?`,
+        [tname],
+        (err, tagRow) => {
+          if (err) return res.status(500).json({ error: "Tag lookup failed" });
+
+          const tagId = tagRow.id;
+
+          // Link plugin <-> tag
+          db.run(
+            `INSERT INTO plugin_tags (plugin_id, tag_id) VALUES (?, ?)`,
+            [pluginId, tagId],
+            (err) => {
+              if (err)
+                return res
+                  .status(500)
+                  .json({ error: "Failed to link plugin and tag" });
+
+              res.status(201).json({
+                message: "Plugin successfully added",
+                pluginId,
+              });
+            }
+          );
+        }
+      );
+    });
+  });
 });
 
-// TODO: Add routes for tags, issues, and faqs
+// ---------------- TAGS ----------------
+app.get("/api/tags", (req, res) => {
+  const query = "SELECT * FROM tags";
 
+  db.all(query, [], (err, rows) => {
+    if (err) return res.status(500).json({ error: "Failed to fetch tags" });
+    res.json(rows);
+  });
+});
+
+// ---------------- ISSUES ----------------
+app.get("/api/issues", (req, res) => {
+  const query = "SELECT * FROM issues";
+
+  db.all(query, [], (err, rows) => {
+    if (err) return res.status(500).json({ error: "Failed to fetch issues" });
+    res.json(rows);
+  });
+});
+
+app.post("/api/issues", (req, res) => {
+  const { title, severity, status } = req.body;
+
+  if (!title || !severity || !status) {
+    return res.status(400).json({ error: "All issue fields are required." });
+  }
+
+  const query = `
+    INSERT INTO issues (title, severity, status)
+    VALUES (?, ?, ?)
+  `;
+
+  db.run(query, [title, severity, status], function (err) {
+    if (err) return res.status(500).json({ error: "Failed to add issue" });
+
+    res.status(201).json({
+      message: "Issue successfully added",
+      issueId: this.lastID,
+    });
+  });
+});
+
+// ---------------- FAQS ----------------
+app.get("/api/faqs", (req, res) => {
+  const query = "SELECT * FROM faqs";
+
+  db.all(query, [], (err, rows) => {
+    if (err) return res.status(500).json({ error: "Failed to fetch FAQs" });
+    res.json(rows);
+  });
+});
+
+app.post("/api/faqs", (req, res) => {
+  const { question, answer } = req.body;
+
+  if (!question || !answer) {
+    return res.status(400).json({ error: "FAQ question and answer required." });
+  }
+
+  const query = `
+    INSERT INTO faqs (question, answer)
+    VALUES (?, ?)
+  `;
+
+  db.run(query, [question, answer], function (err) {
+    if (err) return res.status(500).json({ error: "Failed to add FAQ" });
+
+    res.status(201).json({
+      message: "FAQ successfully added",
+      faqId: this.lastID,
+    });
+  });
+});
 
 // -----------------------------------------------------
-// 7. START THE SERVER
+// START SERVER
 // -----------------------------------------------------
 app.listen(PORT, () => {
   console.log(` Server running at http://localhost:${PORT}`);
